@@ -97,6 +97,10 @@ body {
     width: 200px;
 }
 
+#statusFilter {
+    width: 180px;
+}
+
 .search-input:focus,
 .location-input:focus,
 .filter-select:focus {
@@ -234,11 +238,21 @@ body {
     margin-bottom: 15px;
 }
 
+.job-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
 .job-title {
     font-size: 1.3em;
     font-weight: bold;
-    margin-bottom: 8px;
     color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
 }
 
 .job-company {
@@ -279,6 +293,57 @@ body {
 .badge-inactive {
     background: rgba(231, 76, 60, 0.2);
     color: var(--danger-color);
+}
+
+.badge-status {
+    font-weight: 700;
+    padding: 6px 14px;
+    white-space: nowrap;
+}
+
+.badge-active {
+    background: rgba(39, 174, 96, 0.3);
+    color: #2ecc71;
+    border: 1px solid rgba(39, 174, 96, 0.5);
+}
+
+.badge-closed {
+    background: rgba(231, 76, 60, 0.3);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.5);
+}
+
+.badge-warning {
+    background: rgba(243, 156, 18, 0.3);
+    color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.5);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.badge-expired {
+    background: rgba(149, 165, 166, 0.3);
+    color: #95a5a6;
+    border: 1px solid rgba(149, 165, 166, 0.5);
+}
+
+.badge-deadline {
+    background: rgba(52, 152, 219, 0.3);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.5);
+}
+
+.badge-large {
+    font-size: 1em;
+    padding: 8px 16px;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }
 
 .job-description {
@@ -368,6 +433,17 @@ body {
     color: var(--text-primary);
 }
 
+.job-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
 .job-detail-section {
     margin: 20px 0;
 }
@@ -402,6 +478,43 @@ body {
     background: #357abd;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+}
+
+.status-indicator {
+    display: inline-block;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.status-active {
+    background: rgba(39, 174, 96, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(39, 174, 96, 0.5);
+}
+
+.status-inactive {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.5);
+}
+
+.text-warning {
+    color: #f39c12;
+}
+
+.text-expired {
+    color: #95a5a6;
+}
+
+.warning-text {
+    font-weight: 700;
+    color: #f39c12;
+}
+
+.expired-text {
+    font-weight: 700;
+    color: #95a5a6;
 }
 
 /* Responsive */

@@ -23,10 +23,11 @@
 
                 <input type="text" id="locationFilter" placeholder="📍 Ubicación" class="location-input">
 
-                <label class="checkbox-label">
-                    <input type="checkbox" id="activeOnly" checked>
-                    Solo activos
-                </label>
+                <select id="statusFilter" class="filter-select">
+                    <option value="all">Todos los estados</option>
+                    <option value="active" selected>✓ Solo vigentes</option>
+                    <option value="inactive">✕ Solo cerrados</option>
+                </select>
             </div>
 
             <div class="actions">

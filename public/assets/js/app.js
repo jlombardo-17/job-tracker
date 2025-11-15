@@ -11,7 +11,7 @@ const jobsContainer = document.getElementById('jobsContainer');
 const searchInput = document.getElementById('searchInput');
 const sourceFilter = document.getElementById('sourceFilter');
 const locationFilter = document.getElementById('locationFilter');
-const activeOnlyCheckbox = document.getElementById('activeOnly');
+const statusFilter = document.getElementById('statusFilter');
 const refreshBtn = document.getElementById('refreshBtn');
 const scrapeBtn = document.getElementById('scrapeBtn');
 const modal = document.getElementById('jobModal');
@@ -30,7 +30,7 @@ function setupEventListeners() {
     searchInput.addEventListener('input', debounce(applyFilters, 300));
     sourceFilter.addEventListener('change', applyFilters);
     locationFilter.addEventListener('input', debounce(applyFilters, 300));
-    activeOnlyCheckbox.addEventListener('change', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
     refreshBtn.addEventListener('click', handleRefresh);
     scrapeBtn.addEventListener('click', handleScrape);
     closeModal.addEventListener('click', () => modal.style.display = 'none');
@@ -75,8 +75,17 @@ async function loadJobs() {
     try {
         jobsContainer.innerHTML = '<div class="loading">Cargando trabajos...</div>';
         
-        const isActive = activeOnlyCheckbox.checked;
-        const response = await fetch(`${API_BASE}/jobs?is_active=${isActive}`);
+        const statusValue = statusFilter.value;
+        let url = `${API_BASE}/jobs`;
+        
+        // Only add is_active filter if not 'all'
+        if (statusValue === 'active') {
+            url += '?is_active=true';
+        } else if (statusValue === 'inactive') {
+            url += '?is_active=false';
+        }
+        
+        const response = await fetch(url);
         const data = await response.json();
         
         if (data.success) {
@@ -156,17 +165,26 @@ function createJobCard(job) {
     const source = sources.find(s => s.id === job.source_id);
     const sourceName = source ? source.name : job.source_id;
     
+    // Check if closing soon (within 7 days)
+    const isClosingSoon = job.closing_date && isDateClosingSoon(job.closing_date);
+    const isClosed = job.closing_date && new Date(job.closing_date) < new Date();
+    
     card.innerHTML = `
         <div class="job-header">
-            <div class="job-title">${escapeHtml(job.title)}</div>
+            <div class="job-title-row">
+                <div class="job-title">${escapeHtml(job.title)}</div>
+                <span class="job-badge badge-status ${job.is_active ? 'badge-active' : 'badge-closed'}">
+                    ${job.is_active ? '✓ Vigente' : '✕ Cerrado'}
+                </span>
+            </div>
             ${job.company ? `<div class="job-company">${escapeHtml(job.company)}</div>` : ''}
             ${job.location ? `<div class="job-location">📍 ${escapeHtml(job.location)}</div>` : ''}
         </div>
         
         <div class="job-meta">
             <span class="job-badge badge-source">${sourceName}</span>
-            ${job.posted_date ? `<span class="job-badge badge-date">${formatDate(job.posted_date)}</span>` : ''}
-            ${!job.is_active ? '<span class="job-badge badge-inactive">Inactivo</span>' : ''}
+            ${job.posted_date ? `<span class="job-badge badge-date">📅 ${formatDate(job.posted_date)}</span>` : ''}
+            ${job.closing_date ? `<span class="job-badge ${isClosingSoon ? 'badge-warning' : isClosed ? 'badge-expired' : 'badge-deadline'}">⏰ Cierre: ${formatDate(job.closing_date)}</span>` : ''}
         </div>
         
         ${job.description ? `<div class="job-description">${escapeHtml(job.description)}</div>` : ''}
@@ -179,9 +197,16 @@ function createJobCard(job) {
 function showJobDetails(job) {
     const source = sources.find(s => s.id === job.source_id);
     const sourceName = source ? source.name : job.source_id;
+    const isClosingSoon = job.closing_date && isDateClosingSoon(job.closing_date);
+    const isClosed = job.closing_date && new Date(job.closing_date) < new Date();
     
     const detailsHTML = `
-        <h2 class="job-detail-title">${escapeHtml(job.title)}</h2>
+        <div class="job-detail-header">
+            <h2 class="job-detail-title">${escapeHtml(job.title)}</h2>
+            <span class="job-badge badge-status ${job.is_active ? 'badge-active' : 'badge-closed'} badge-large">
+                ${job.is_active ? '✓ Vigente' : '✕ Cerrado'}
+            </span>
+        </div>
         
         ${job.company ? `
             <div class="job-detail-section">
@@ -202,24 +227,37 @@ function showJobDetails(job) {
             <div class="job-detail-value">${sourceName}</div>
         </div>
         
+        <div class="job-detail-section">
+            <div class="job-detail-label">Estado del llamado</div>
+            <div class="job-detail-value">
+                <span class="status-indicator ${job.is_active ? 'status-active' : 'status-inactive'}">
+                    ${job.is_active ? '🟢 Vigente - Aún se aceptan postulaciones' : '🔴 Cerrado - No se aceptan más postulaciones'}
+                </span>
+            </div>
+        </div>
+        
         ${job.posted_date ? `
             <div class="job-detail-section">
                 <div class="job-detail-label">Fecha de publicación</div>
-                <div class="job-detail-value">${formatDate(job.posted_date)}</div>
+                <div class="job-detail-value">📅 ${formatDate(job.posted_date)}</div>
             </div>
         ` : ''}
         
         ${job.closing_date ? `
             <div class="job-detail-section">
                 <div class="job-detail-label">Fecha de cierre</div>
-                <div class="job-detail-value">${formatDate(job.closing_date)}</div>
+                <div class="job-detail-value ${isClosingSoon ? 'text-warning' : isClosed ? 'text-expired' : ''}">
+                    ⏰ ${formatDate(job.closing_date)}
+                    ${isClosingSoon && !isClosed ? '<span class="warning-text"> - ¡Cierra pronto!</span>' : ''}
+                    ${isClosed ? '<span class="expired-text"> - Fecha expirada</span>' : ''}
+                </div>
             </div>
         ` : ''}
         
         ${job.salary ? `
             <div class="job-detail-section">
                 <div class="job-detail-label">Salario</div>
-                <div class="job-detail-value">${escapeHtml(job.salary)}</div>
+                <div class="job-detail-value">💰 ${escapeHtml(job.salary)}</div>
             </div>
         ` : ''}
         
@@ -317,6 +355,15 @@ function formatDate(dateString) {
         month: 'long',
         day: 'numeric'
     });
+}
+
+function isDateClosingSoon(dateString) {
+    if (!dateString) return false;
+    const closingDate = new Date(dateString);
+    const today = new Date();
+    const diffTime = closingDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 && diffDays <= 7; // Closing within 7 days
 }
 
 function showNotification(message, type = 'info') {
