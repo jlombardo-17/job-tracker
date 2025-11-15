@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Tracker - Seguimiento de Llamados</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📋 Job Tracker</h1>
+            <p class="subtitle">Sistema de seguimiento de llamados laborales</p>
+        </header>
+
+        <div class="controls">
+            <div class="filters">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar por título, empresa o descripción..." class="search-input">
+                
+                <select id="sourceFilter" class="filter-select">
+                    <option value="">Todas las fuentes</option>
+                </select>
+
+                <input type="text" id="locationFilter" placeholder="📍 Ubicación" class="location-input">
+
+                <label class="checkbox-label">
+                    <input type="checkbox" id="activeOnly" checked>
+                    Solo activos
+                </label>
+            </div>
+
+            <div class="actions">
+                <button id="refreshBtn" class="btn btn-primary">
+                    🔄 Actualizar datos
+                </button>
+                <button id="scrapeBtn" class="btn btn-success">
+                    🕷️ Ejecutar scraping
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-container" id="statsContainer">
+            <div class="stat-card">
+                <div class="stat-value" id="totalJobs">0</div>
+                <div class="stat-label">Total de trabajos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeJobs">0</div>
+                <div class="stat-label">Trabajos activos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="sourcesCount">0</div>
+                <div class="stat-label">Fuentes activas</div>
+            </div>
+        </div>
+
+        <div class="jobs-container" id="jobsContainer">
+            <div class="loading">Cargando trabajos...</div>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- Job Detail Modal -->
+    <div id="jobModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="jobDetails"></div>
+        </div>
+    </div>
+
+    <script src="/assets/js/app.js"></script>
+</body>
+</html>

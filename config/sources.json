@@ -1,0 +1,34 @@
+{
+  "sources": [
+    {
+      "id": "llamados-uy",
+      "name": "Llamados.com.uy",
+      "url": "https://www.llamados.com.uy",
+      "enabled": true,
+      "category": "general",
+      "scraper": "llamados-uy"
+    },
+    {
+      "id": "buscojobs",
+      "name": "BuscoJobs Uruguay",
+      "url": "https://www.buscojobs.com.uy",
+      "enabled": true,
+      "category": "general",
+      "scraper": "buscojobs"
+    },
+    {
+      "id": "computrabajo",
+      "name": "CompuTrabajo Uruguay",
+      "url": "https://www.computrabajo.com.uy",
+      "enabled": true,
+      "category": "general",
+      "scraper": "computrabajo"
+    }
+  ],
+  "scraperConfig": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "timeout": 10000,
+    "retries": 3,
+    "delay": 2000
+  }
+}
