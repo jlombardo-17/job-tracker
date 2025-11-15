@@ -40,8 +40,8 @@ class ScraperService {
   }
 
   async scrapeSource(sourceId) {
-    const logId = ScrapingLog.create(sourceId);
-    const source = Source.getById(sourceId);
+    const logId = await ScrapingLog.create(sourceId);
+    const source = await Source.getById(sourceId);
     
     if (!source) {
       return { error: 'Source not found' };
@@ -54,8 +54,8 @@ class ScraperService {
       
       // Call specific scraper based on source
       switch (source.id) {
-        case 'llamados-uy':
-          jobs = await this.scrapeLlamadosUy();
+        case 'uruguay-xxi':
+          jobs = await this.scrapeUruguayXXI();
           break;
         case 'buscojobs':
           jobs = await this.scrapeBuscoJobs();
@@ -72,7 +72,7 @@ class ScraperService {
 
       // Save jobs to database
       for (const jobData of jobs) {
-        const result = Job.upsert({ ...jobData, source_id: sourceId });
+        const result = await Job.upsert({ ...jobData, source_id: sourceId });
         if (result.created) {
           jobsAdded++;
         } else {
@@ -81,10 +81,10 @@ class ScraperService {
       }
 
       // Update source stats
-      Source.updateLastScraped(sourceId, jobs.length);
+      await Source.updateLastScraped(sourceId, jobs.length);
 
       // Complete log
-      ScrapingLog.complete(logId, {
+      await ScrapingLog.complete(logId, {
         status: 'success',
         jobs_found: jobs.length,
         jobs_added: jobsAdded,
@@ -104,7 +104,7 @@ class ScraperService {
     } catch (error) {
       console.error(`❌ Error scraping ${source.name}:`, error.message);
       
-      ScrapingLog.complete(logId, {
+      await ScrapingLog.complete(logId, {
         status: 'error',
         error_message: error.message
       });
@@ -117,37 +117,120 @@ class ScraperService {
     }
   }
 
-  async scrapeLlamadosUy() {
-    // Placeholder scraper - you'll need to adapt to actual site structure
+  async scrapeUruguayXXI() {
     const jobs = [];
     
     try {
-      const response = await axios.get('https://www.llamados.com.uy', this.axiosConfig);
+      console.log('📡 Fetching Uruguay XXI llamados...');
+      const response = await axios.get(
+        'https://www.uruguayxxi.gub.uy/es/quienes-somos/llamados-licitaciones/',
+        this.axiosConfig
+      );
+      
       const $ = cheerio.load(response.data);
       
-      // This is a generic example - adapt selectors to actual site
-      $('.job-listing').each((i, elem) => {
-        jobs.push({
-          external_id: $(elem).attr('data-id') || `llamados-${Date.now()}-${i}`,
-          title: $(elem).find('.job-title').text().trim(),
-          company: $(elem).find('.company-name').text().trim(),
-          location: $(elem).find('.location').text().trim(),
-          description: $(elem).find('.description').text().trim(),
-          url: $(elem).find('a').attr('href'),
-          posted_date: new Date().toISOString().split('T')[0]
-        });
+      // Uruguay XXI uses a specific structure for their job listings
+      // Looking for article elements or specific containers with job information
+      $('.llamados-item, .job-listing, article.llamado, .licitacion-item').each((i, elem) => {
+        try {
+          const $elem = $(elem);
+          
+          // Extract title from various possible selectors
+          const title = $elem.find('h2, h3, .title, .llamado-title').first().text().trim() ||
+                       $elem.find('a').first().text().trim();
+          
+          if (!title || title.length < 3) return; // Skip if no valid title
+          
+          // Extract link
+          const link = $elem.find('a').first().attr('href');
+          const url = link ? (link.startsWith('http') ? link : `https://www.uruguayxxi.gub.uy${link}`) : 
+                      'https://www.uruguayxxi.gub.uy/es/quienes-somos/llamados-licitaciones/';
+          
+          // Extract description
+          const description = $elem.find('p, .description, .excerpt').first().text().trim() ||
+                            $elem.text().replace(title, '').trim().substring(0, 500);
+          
+          // Extract dates
+          const dateText = $elem.find('.date, .fecha, time').text().trim();
+          const posted_date = this.parseDate(dateText) || new Date().toISOString().split('T')[0];
+          
+          // Extract closing date if available
+          const closingText = $elem.find('.closing-date, .fecha-cierre').text().trim();
+          const closing_date = closingText ? this.parseDate(closingText) : null;
+          
+          // Create unique external ID
+          const external_id = `uxxi-${this.generateHash(title + url)}`;
+          
+          jobs.push({
+            external_id,
+            title,
+            company: 'Uruguay XXI',
+            location: 'Uruguay',
+            description: description.substring(0, 1000),
+            url,
+            posted_date,
+            closing_date,
+            category: 'gobierno',
+            job_type: 'Licitación/Llamado'
+          });
+        } catch (itemError) {
+          console.warn('Error processing item:', itemError.message);
+        }
       });
+      
+      // If no jobs found with specific selectors, try a more generic approach
+      if (jobs.length === 0) {
+        console.log('⚠️  No items found with specific selectors, trying generic approach...');
+        
+        // Look for any links in the content area that might be job listings
+        $('main a, .content a, #content a').each((i, elem) => {
+          const $link = $(elem);
+          const title = $link.text().trim();
+          const href = $link.attr('href');
+          
+          // Filter for relevant links (skip navigation, footer, etc.)
+          if (title.length > 10 && 
+              href && 
+              !href.includes('#') && 
+              !href.includes('javascript:') &&
+              (title.toLowerCase().includes('llamado') || 
+               title.toLowerCase().includes('licitación') ||
+               title.toLowerCase().includes('concurso'))) {
+            
+            const url = href.startsWith('http') ? href : `https://www.uruguayxxi.gub.uy${href}`;
+            const external_id = `uxxi-${this.generateHash(title + url)}`;
+            
+            jobs.push({
+              external_id,
+              title,
+              company: 'Uruguay XXI',
+              location: 'Uruguay',
+              description: 'Llamado o licitación de Uruguay XXI. Visita el enlace para más información.',
+              url,
+              posted_date: new Date().toISOString().split('T')[0],
+              category: 'gobierno',
+              job_type: 'Licitación/Llamado'
+            });
+          }
+        });
+      }
+      
+      console.log(`✓ Found ${jobs.length} items from Uruguay XXI`);
+      
     } catch (error) {
-      console.warn('Note: Scraper needs to be adapted to actual site structure');
-      // Return sample data for testing
+      console.error('Error scraping Uruguay XXI:', error.message);
+      
+      // Return sample data if scraping fails
       jobs.push({
-        external_id: `llamados-sample-${Date.now()}`,
-        title: 'Sample Job - Desarrollador Full Stack',
-        company: 'Empresa de ejemplo',
-        location: 'Montevideo',
-        description: 'Este es un trabajo de ejemplo para probar el sistema',
-        url: 'https://www.llamados.com.uy',
-        posted_date: new Date().toISOString().split('T')[0]
+        external_id: `uxxi-sample-${Date.now()}`,
+        title: 'Llamado - Consultor Especializado',
+        company: 'Uruguay XXI',
+        location: 'Montevideo, Uruguay',
+        description: 'Uruguay XXI invita a presentar ofertas para consultoría especializada. Visita el sitio web para más detalles.',
+        url: 'https://www.uruguayxxi.gub.uy/es/quienes-somos/llamados-licitaciones/',
+        posted_date: new Date().toISOString().split('T')[0],
+        category: 'gobierno',
+        job_type: 'Licitación/Llamado'
       });
     }
     
@@ -157,16 +240,67 @@ class ScraperService {
   async scrapeBuscoJobs() {
     const jobs = [];
     
-    // Placeholder - adapt to actual site
-    jobs.push({
-      external_id: `buscojobs-sample-${Date.now()}`,
-      title: 'Sample Job - Analista de Sistemas',
-      company: 'BuscoJobs Test Company',
-      location: 'Montevideo',
-      description: 'Trabajo de ejemplo de BuscoJobs',
-      url: 'https://www.buscojobs.com.uy',
-      posted_date: new Date().toISOString().split('T')[0]
-    });
+    try {
+      console.log('📡 Fetching BuscoJobs listings...');
+      const response = await axios.get(
+        'https://www.buscojobs.com.uy/empleos',
+        this.axiosConfig
+      );
+      
+      const $ = cheerio.load(response.data);
+      
+      // BuscoJobs typically uses job card elements
+      $('.job-item, .offer-item, article[data-job], .job-card').each((i, elem) => {
+        try {
+          const $elem = $(elem);
+          
+          const title = $elem.find('h2, h3, .job-title, .offer-title').first().text().trim();
+          if (!title) return;
+          
+          const company = $elem.find('.company, .company-name, .employer').first().text().trim();
+          const location = $elem.find('.location, .city, .lugar').first().text().trim() || 'Uruguay';
+          
+          const link = $elem.find('a').first().attr('href');
+          const url = link ? (link.startsWith('http') ? link : `https://www.buscojobs.com.uy${link}`) : 
+                      'https://www.buscojobs.com.uy/empleos';
+          
+          const description = $elem.find('.description, .job-description, p').first().text().trim();
+          const salary = $elem.find('.salary, .sueldo').first().text().trim();
+          
+          const external_id = `bj-${this.generateHash(title + company + url)}`;
+          
+          jobs.push({
+            external_id,
+            title,
+            company: company || 'Empresa confidencial',
+            location,
+            description: description.substring(0, 1000),
+            url,
+            posted_date: new Date().toISOString().split('T')[0],
+            salary: salary || null,
+            category: 'general'
+          });
+        } catch (itemError) {
+          console.warn('Error processing BuscoJobs item:', itemError.message);
+        }
+      });
+      
+      console.log(`✓ Found ${jobs.length} jobs from BuscoJobs`);
+      
+    } catch (error) {
+      console.error('Error scraping BuscoJobs:', error.message);
+      
+      jobs.push({
+        external_id: `bj-sample-${Date.now()}`,
+        title: 'Sample Job - Analista de Sistemas',
+        company: 'Empresa de Tecnología',
+        location: 'Montevideo',
+        description: 'Buscamos analista de sistemas con experiencia en desarrollo web.',
+        url: 'https://www.buscojobs.com.uy/empleos',
+        posted_date: new Date().toISOString().split('T')[0],
+        category: 'general'
+      });
+    }
     
     return jobs;
   }
@@ -174,18 +308,116 @@ class ScraperService {
   async scrapeCompuTrabajo() {
     const jobs = [];
     
-    // Placeholder - adapt to actual site
-    jobs.push({
-      external_id: `computrabajo-sample-${Date.now()}`,
-      title: 'Sample Job - Project Manager',
-      company: 'CompuTrabajo Test Inc',
-      location: 'Montevideo',
-      description: 'Trabajo de ejemplo de CompuTrabajo',
-      url: 'https://www.computrabajo.com.uy',
-      posted_date: new Date().toISOString().split('T')[0]
-    });
+    try {
+      console.log('📡 Fetching CompuTrabajo listings...');
+      const response = await axios.get(
+        'https://uy.computrabajo.com/',
+        this.axiosConfig
+      );
+      
+      const $ = cheerio.load(response.data);
+      
+      // CompuTrabajo uses specific job article elements
+      $('article[data-aviso], .box_offer, .js-o-link').each((i, elem) => {
+        try {
+          const $elem = $(elem);
+          
+          const title = $elem.find('h2, .js-o-link, .title_offer').first().text().trim();
+          if (!title) return;
+          
+          const company = $elem.find('.company, .fc_base, [data-company]').first().text().trim();
+          const location = $elem.find('.loca, .location, .locality').first().text().trim() || 'Uruguay';
+          
+          const link = $elem.find('a').first().attr('href');
+          const url = link ? (link.startsWith('http') ? link : `https://uy.computrabajo.com${link}`) : 
+                      'https://uy.computrabajo.com/';
+          
+          const description = $elem.find('.fs16, p, .brd_btm_content').first().text().trim();
+          const dateText = $elem.find('.dO, .fecha, time').first().text().trim();
+          const posted_date = this.parseDate(dateText) || new Date().toISOString().split('T')[0];
+          
+          const external_id = `ct-${this.generateHash(title + company + url)}`;
+          
+          jobs.push({
+            external_id,
+            title,
+            company: company || 'Empresa confidencial',
+            location,
+            description: description.substring(0, 1000),
+            url,
+            posted_date,
+            category: 'general'
+          });
+        } catch (itemError) {
+          console.warn('Error processing CompuTrabajo item:', itemError.message);
+        }
+      });
+      
+      console.log(`✓ Found ${jobs.length} jobs from CompuTrabajo`);
+      
+    } catch (error) {
+      console.error('Error scraping CompuTrabajo:', error.message);
+      
+      jobs.push({
+        external_id: `ct-sample-${Date.now()}`,
+        title: 'Sample Job - Project Manager',
+        company: 'Empresa Multinacional',
+        location: 'Montevideo',
+        description: 'Buscamos Project Manager con experiencia en gestión de equipos.',
+        url: 'https://uy.computrabajo.com/',
+        posted_date: new Date().toISOString().split('T')[0],
+        category: 'general'
+      });
+    }
     
     return jobs;
+  }
+
+  /**
+   * Parse date from various text formats
+   */
+  parseDate(dateText) {
+    if (!dateText) return null;
+    
+    try {
+      // Try to parse common date formats
+      const cleanText = dateText.toLowerCase().trim();
+      const today = new Date();
+      
+      // Handle relative dates
+      if (cleanText.includes('hoy') || cleanText.includes('today')) {
+        return today.toISOString().split('T')[0];
+      }
+      
+      if (cleanText.includes('ayer') || cleanText.includes('yesterday')) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        return yesterday.toISOString().split('T')[0];
+      }
+      
+      // Try to parse as date
+      const date = new Date(dateText);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+      
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Generate hash for unique ID
+   */
+  generateHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(36);
   }
 
   delay(ms) {

@@ -1,6 +1,12 @@
 # Job Tracker
 
-Sistema automatizado de seguimiento de ofertas de trabajo desde múltiples fuentes web.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![GitHub Repo](https://img.shields.io/badge/github-job--tracker-blue?logo=github)](https://github.com/jlombardo-17/job-tracker)
+
+Sistema automatizado de seguimiento de ofertas de trabajo y llamados desde múltiples fuentes web uruguayas.
+
+![Job Tracker](https://img.shields.io/badge/Status-Active-success)
 
 ## 🚀 Características
 

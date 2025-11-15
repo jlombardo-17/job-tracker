@@ -1,17 +1,17 @@
 {
   "sources": [
     {
-      "id": "llamados-uy",
-      "name": "Llamados.com.uy",
-      "url": "https://www.llamados.com.uy",
+      "id": "uruguay-xxi",
+      "name": "Uruguay XXI",
+      "url": "https://www.uruguayxxi.gub.uy/es/quienes-somos/llamados-licitaciones/",
       "enabled": true,
-      "category": "general",
-      "scraper": "llamados-uy"
+      "category": "gobierno",
+      "scraper": "uruguay-xxi"
     },
     {
       "id": "buscojobs",
       "name": "BuscoJobs Uruguay",
-      "url": "https://www.buscojobs.com.uy",
+      "url": "https://www.buscojobs.com.uy/empleos",
       "enabled": true,
       "category": "general",
       "scraper": "buscojobs"
@@ -19,16 +19,24 @@
     {
       "id": "computrabajo",
       "name": "CompuTrabajo Uruguay",
-      "url": "https://www.computrabajo.com.uy",
+      "url": "https://uy.computrabajo.com/",
       "enabled": true,
       "category": "general",
       "scraper": "computrabajo"
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn Jobs Uruguay",
+      "url": "https://www.linkedin.com/jobs/search/?location=Uruguay",
+      "enabled": false,
+      "category": "profesional",
+      "scraper": "linkedin"
     }
   ],
   "scraperConfig": {
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "timeout": 10000,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "timeout": 15000,
     "retries": 3,
-    "delay": 2000
+    "delay": 3000
   }
 }

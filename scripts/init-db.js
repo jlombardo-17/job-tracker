@@ -74,9 +74,10 @@ async function initDatabase() {
     
     // Insert default sources from config
     const sources = [
-      { id: 'llamados-uy', name: 'Llamados.com.uy', url: 'https://www.llamados.com.uy' },
-      { id: 'buscojobs', name: 'BuscoJobs Uruguay', url: 'https://www.buscojobs.com.uy' },
-      { id: 'computrabajo', name: 'CompuTrabajo Uruguay', url: 'https://www.computrabajo.com.uy' }
+      { id: 'uruguay-xxi', name: 'Uruguay XXI', url: 'https://www.uruguayxxi.gub.uy/es/quienes-somos/llamados-licitaciones/' },
+      { id: 'buscojobs', name: 'BuscoJobs Uruguay', url: 'https://www.buscojobs.com.uy/empleos' },
+      { id: 'computrabajo', name: 'CompuTrabajo Uruguay', url: 'https://uy.computrabajo.com/' },
+      { id: 'linkedin', name: 'LinkedIn Jobs Uruguay', url: 'https://www.linkedin.com/jobs/search/?location=Uruguay' }
     ];
 
     const insertSource = db.prepare(`
