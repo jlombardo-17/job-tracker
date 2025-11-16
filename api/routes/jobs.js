@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     await Job.updateExpiredJobs();
     
     const filters = {
-      is_active: req.query.is_active !== undefined ? req.query.is_active === 'true' : true,
+      is_active: req.query.is_active !== undefined ? req.query.is_active === 'true' : undefined,
       source_id: req.query.source_id,
       search: req.query.search,
       location: req.query.location,
