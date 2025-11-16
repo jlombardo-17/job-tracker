@@ -164,8 +164,8 @@ class ScraperService {
           const dateText = $elem.find('.date, .fecha, time').text().trim();
           const posted_date = this.parseDate(dateText) || new Date().toISOString().split('T')[0];
           
-          // Create unique external ID
-          const external_id = `uxxi-${this.generateHash(title + url)}`;
+          // Create unique external ID based on URL (more stable than title)
+          const external_id = `uxxi-${this.generateHash(url)}`;
           
           jobs.push({
             external_id,
@@ -214,7 +214,7 @@ class ScraperService {
             }
             
             const url = href.startsWith('http') ? href : `https://www.uruguayxxi.gub.uy${href}`;
-            const external_id = `uxxi-${this.generateHash(title + url)}`;
+            const external_id = `uxxi-${this.generateHash(url)}`;
             
             jobs.push({
               external_id,
