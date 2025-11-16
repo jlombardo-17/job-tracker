@@ -30,7 +30,10 @@ function setupEventListeners() {
     searchInput.addEventListener('input', debounce(applyFilters, 300));
     sourceFilter.addEventListener('change', applyFilters);
     locationFilter.addEventListener('input', debounce(applyFilters, 300));
-    statusFilter.addEventListener('change', applyFilters);
+    statusFilter.addEventListener('change', async () => {
+        await loadJobs();
+        await loadStats();
+    });
     refreshBtn.addEventListener('click', handleRefresh);
     scrapeBtn.addEventListener('click', handleScrape);
     closeModal.addEventListener('click', () => modal.style.display = 'none');
