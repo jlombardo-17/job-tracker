@@ -2,6 +2,7 @@ import UruguayXXIScraper from './UruguayXXIScraper.js';
 import BuscoJobsScraper from './BuscoJobsScraper.js';
 import CompuTrabajoScraper from './CompuTrabajoScraper.js';
 import LinkedInScraper from './LinkedInScraper.js';
+import UruguayConcursaScraper from './UruguayConcursaScraper.js';
 
 /**
  * Factory for creating scraper instances based on source
@@ -16,6 +17,7 @@ class ScraperFactory {
     'buscojobs': BuscoJobsScraper,
     'computrabajo': CompuTrabajoScraper,
     'linkedin': LinkedInScraper,
+    'uruguay-concursa': UruguayConcursaScraper,
     // Add more scrapers here as they are implemented
   };
 

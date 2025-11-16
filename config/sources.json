@@ -31,6 +31,14 @@
       "enabled": false,
       "category": "profesional",
       "scraper": "linkedin"
+    },
+    {
+      "id": "uruguay-concursa",
+      "name": "Uruguay Concursa",
+      "url": "https://www.uruguayconcursa.gub.uy/Portal/servlet/com.si.recsel.dspllamados62",
+      "enabled": true,
+      "category": "gobierno",
+      "scraper": "uruguay-concursa"
     }
   ],
   "scraperConfig": {
