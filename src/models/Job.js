@@ -1,6 +1,18 @@
 import db from '../../config/database.js';
 
 class Job {
+  // Determine if a job should be active based on closing_date
+  static shouldBeActive(closing_date) {
+    if (!closing_date) {
+      return true; // No closing date means it's still active
+    }
+    const closingDate = new Date(closing_date);
+    const today = new Date();
+    // Set today to start of day for fair comparison
+    today.setHours(0, 0, 0, 0);
+    return closingDate >= today;
+  }
+
   static async getAll(filters = {}) {
     let query = 'SELECT * FROM jobs WHERE 1=1';
     const params = [];
@@ -57,11 +69,14 @@ class Job {
       tags
     } = jobData;
 
+    // Automatically determine if job should be active based on closing_date
+    const is_active = this.shouldBeActive(closing_date) ? 1 : 0;
+
     const stmt = db.prepare(`
       INSERT INTO jobs (
         source_id, external_id, title, company, location, description,
-        url, posted_date, closing_date, salary, job_type, category, tags
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        url, posted_date, closing_date, salary, job_type, category, tags, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = await stmt.run(
@@ -77,7 +92,8 @@ class Job {
       salary || null,
       job_type || null,
       category || null,
-      tags || null
+      tags || null,
+      is_active
     );
 
     return result.lastInsertRowid;
@@ -107,6 +123,9 @@ class Job {
       'SELECT id FROM jobs WHERE source_id = ? AND external_id = ?'
     ).get(jobData.source_id, jobData.external_id);
 
+    // Automatically set is_active based on closing_date
+    jobData.is_active = this.shouldBeActive(jobData.closing_date) ? 1 : 0;
+
     if (existing) {
       await this.update(existing.id, jobData);
       return { id: existing.id, created: false };
@@ -118,6 +137,20 @@ class Job {
 
   static async markInactive(id) {
     return await db.prepare('UPDATE jobs SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(id);
+  }
+
+  static async updateExpiredJobs() {
+    // Mark all jobs with closing_date in the past as inactive
+    const today = new Date().toISOString().split('T')[0];
+    const result = await db.prepare(
+      `UPDATE jobs 
+       SET is_active = 0, updated_at = CURRENT_TIMESTAMP 
+       WHERE closing_date IS NOT NULL 
+       AND closing_date < ? 
+       AND is_active = 1`
+    ).run(today);
+    
+    return result.changes || 0;
   }
 
   static async getStats() {

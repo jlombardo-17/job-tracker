@@ -6,6 +6,9 @@ const router = express.Router();
 // Get all jobs with filters
 router.get('/', async (req, res) => {
   try {
+    // First, update any expired jobs
+    await Job.updateExpiredJobs();
+    
     const filters = {
       is_active: req.query.is_active !== undefined ? req.query.is_active === 'true' : true,
       source_id: req.query.source_id,
@@ -75,6 +78,23 @@ router.patch('/:id/deactivate', async (req, res) => {
     res.json({
       success: true,
       message: 'Job marked as inactive'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update all expired jobs
+router.post('/update-expired', async (req, res) => {
+  try {
+    const updatedCount = await Job.updateExpiredJobs();
+    res.json({
+      success: true,
+      message: `${updatedCount} job(s) marked as inactive due to expired closing date`,
+      count: updatedCount
     });
   } catch (error) {
     res.status(500).json({

@@ -136,10 +136,20 @@ class ScraperService {
           const $elem = $(elem);
           
           // Extract title from various possible selectors
-          const title = $elem.find('h2, h3, .title, .llamado-title').first().text().trim() ||
+          let title = $elem.find('h2, h3, .title, .llamado-title').first().text().trim() ||
                        $elem.find('a').first().text().trim();
           
           if (!title || title.length < 3) return; // Skip if no valid title
+          
+          // Extract closing date from title (format: DD/MM/YYYY at the end)
+          let closing_date = null;
+          const dateMatch = title.match(/(\d{2}\/\d{2}\/\d{4})/);
+          if (dateMatch) {
+            const [day, month, year] = dateMatch[1].split('/');
+            closing_date = `${year}-${month}-${day}`;
+            // Clean the title by removing the date
+            title = title.replace(/\s*\d{2}\/\d{2}\/\d{4}\s*$/g, '').trim();
+          }
           
           // Extract link
           const link = $elem.find('a').first().attr('href');
@@ -153,10 +163,6 @@ class ScraperService {
           // Extract dates
           const dateText = $elem.find('.date, .fecha, time').text().trim();
           const posted_date = this.parseDate(dateText) || new Date().toISOString().split('T')[0];
-          
-          // Extract closing date if available
-          const closingText = $elem.find('.closing-date, .fecha-cierre').text().trim();
-          const closing_date = closingText ? this.parseDate(closingText) : null;
           
           // Create unique external ID
           const external_id = `uxxi-${this.generateHash(title + url)}`;
@@ -185,7 +191,7 @@ class ScraperService {
         // Look for any links in the content area that might be job listings
         $('main a, .content a, #content a').each((i, elem) => {
           const $link = $(elem);
-          const title = $link.text().trim();
+          let title = $link.text().trim();
           const href = $link.attr('href');
           
           // Filter for relevant links (skip navigation, footer, etc.)
@@ -196,6 +202,16 @@ class ScraperService {
               (title.toLowerCase().includes('llamado') || 
                title.toLowerCase().includes('licitación') ||
                title.toLowerCase().includes('concurso'))) {
+            
+            // Extract closing date from title (format: DD/MM/YYYY at the end)
+            let closing_date = null;
+            const dateMatch = title.match(/(\d{2}\/\d{2}\/\d{4})/);
+            if (dateMatch) {
+              const [day, month, year] = dateMatch[1].split('/');
+              closing_date = `${year}-${month}-${day}`;
+              // Clean the title by removing the date
+              title = title.replace(/\s*\d{2}\/\d{2}\/\d{4}\s*$/g, '').trim();
+            }
             
             const url = href.startsWith('http') ? href : `https://www.uruguayxxi.gub.uy${href}`;
             const external_id = `uxxi-${this.generateHash(title + url)}`;
@@ -208,6 +224,7 @@ class ScraperService {
               description: 'Llamado o licitación de Uruguay XXI. Visita el enlace para más información.',
               url,
               posted_date: new Date().toISOString().split('T')[0],
+              closing_date,
               category: 'gobierno',
               job_type: 'Licitación/Llamado'
             });
